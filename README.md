@@ -18,6 +18,6 @@ Further install instructions for meshtastic found
 
 # TODOs
 
-Currently it just runs commands using subprocess, but it would probably be
-better if it offered a connection to an actual virtual terminal, perhaps like
-what [pty](https://docs.python.org/3/library/pty.html) offers.
+Should split paging on lines. The terminal should break it's output in 40 cols,
+so I should be good to just send up to 5 lines of text in one message (40*5 =
+200, about as much text as I want to send in one message)
