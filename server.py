@@ -3,7 +3,6 @@ import meshtastic.serial_interface
 from pubsub import pub
 import subprocess
 import time
-import textwrap
 import pty
 import selectors
 import os
@@ -94,7 +93,7 @@ class MeshTerminal:
             if channel == COMMAND_CHANNEL and msg_type == 'TEXT_MESSAGE_APP':
                 message_txt = packet['decoded']['payload'].decode()
 
-                print(f"[MESH_TERM] Got a message on the authorized channel!\n{message_txt}")
+                print(f"[MESH_TERM][MESSAGE LISTENER] Got a message on the authorized channel!\n{message_txt}")
                 
                 # Run the command that we got sent
                 os.write(self.master_fd, (message_txt + "\n").encode())
@@ -102,31 +101,38 @@ class MeshTerminal:
         except KeyError:
             pass
 
+    """
+    Listen for text on the terminal and send it over the secure channel
+    """
     def sendTtyFeedback(self):
-        data = os.read(self.master_fd, 1024).decode("utf-8")
+        data = os.read(self.master_fd, 2048).decode("utf-8")
         if data:
-            print("[MESH_TERM] SENDING:")
-            chunks = self.split_by_length(data, MAX_MESSAGE_CHARS)
+            print(f"[MESH_TERM][SEND_TTY] Got data: {data}")
+            chunks = self.chunk_data_on_lines(data, MAX_MESSAGE_CHARS)
             for msg in chunks:
+                msg = msg.removesuffix('\r\n')
+                print("[MESH_TERM][SEND_TTY] Sending a chunk...")
                 print(msg,end='')
                 self.interface.sendText(msg, wantAck=True, channelIndex=COMMAND_CHANNEL)
+                if msg[-1] != '\n': print('')
                 time.sleep(MESSAGE_DELAY)
             print('='*80)
 
     def split_by_length(self, text, length):
         return [text[i:i+length] for i in range(0, len(text), length)]
 
-    """
-    Runs a shell command and returns the output
-    """
-    def run_command(self, command):
-        result = subprocess.run(
-                command,
-                capture_output=True,
-                text = True
-                )
-        #print(f"Recieved command {' '.join(command)}, got stdout={result.stdout}, stderr={result.stderr}")
-        return (result.stdout, result.stderr)
+    def chunk_data_on_lines(self, text, max_chunk_size):
+        #print("[MESH_TERM][CHUNKER] Starting chunker...")
+        out = [""] 
+        for line in text.splitlines(keepends=True):
+            if len(out[-1]) + len(line) > max_chunk_size-1:
+                #print(f"[MESH_TERM][CHUNKER] LINE IS TOO MUCH: \"{line.strip('\r\n')}\"")
+                out.append(line.strip(''))
+            else:
+                #print(f"[MESH_TERM][CHUNKER] LINE IS GOOD \"{line.strip('\r\n')}\"")
+                out[-1] += line
+        #print(f"[MESH_TERM][CHUNKER] DONE: {out}")
+        return out
 
 if __name__ == "__main__":
 

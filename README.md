@@ -18,6 +18,5 @@ Further install instructions for meshtastic found
 
 # TODOs
 
-Should split paging on lines. The terminal should break it's output in 40 cols,
-so I should be good to just send up to 5 lines of text in one message (40*5 =
-200, about as much text as I want to send in one message)
+Maybe work on making a client that sends terminal stuff as raw data so it can
+look like an actual terminal on a computer.
