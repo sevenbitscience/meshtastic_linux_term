@@ -21,13 +21,19 @@ MAX_MESSAGE_CHARS=220
 
 
 class MeshTerminal:
-    def __init__(self):
+    def __init__(self, devicePath, secureChannelId):
+        # Save the parameters this was called with
+        self.secureChannelId = secureChannelId
+
         # Subscribe to whenever a message is recieved
         self.gotMessage = pub.subscribe(self.onReceive, "meshtastic.receive")
         print("[MESH_TERM] Attempting to connect to the radio...")
         # Connect to the radio
         try:
-            self.interface = meshtastic.serial_interface.SerialInterface()
+            if devicePath != "":
+                self.interface = meshtastic.serial_interface.SerialInterface(devPath=devicePath)
+            else:
+                self.interface = meshtastic.serial_interface.SerialInterface()
             print(f"[MESH_TERM] Connected to [{self.interface.getShortName()}] {self.interface.getLongName()}")
         except Exception as e:
             print(f"[MESH_TERM] Failed to connect to meshtastic device: {e}")
@@ -90,7 +96,7 @@ class MeshTerminal:
             msg_type = packet['decoded']['portnum']
             channel = packet['channel'] 
             # Match text messages on the right channel
-            if channel == COMMAND_CHANNEL and msg_type == 'TEXT_MESSAGE_APP':
+            if channel == self.secureChannelId and msg_type == 'TEXT_MESSAGE_APP':
                 message_txt = packet['decoded']['payload'].decode()
 
                 print(f"[MESH_TERM][MESSAGE LISTENER] Got a message on the authorized channel!\n{message_txt}")
@@ -113,7 +119,7 @@ class MeshTerminal:
                 msg = msg.removesuffix('\r\n')
                 print("[MESH_TERM][SEND_TTY] Sending a chunk...")
                 print(msg,end='')
-                self.interface.sendText(msg, wantAck=True, channelIndex=COMMAND_CHANNEL)
+                self.interface.sendText(msg, wantAck=True, channelIndex=self.secureChannelId)
                 if msg[-1] != '\n': print('')
                 time.sleep(MESSAGE_DELAY)
             print('='*80)
@@ -134,9 +140,49 @@ class MeshTerminal:
         #print(f"[MESH_TERM][CHUNKER] DONE: {out}")
         return out
 
-if __name__ == "__main__":
+def printHelp():
+    print(
+"""      Mesh Terminal (Server)
+=========== OPTIONS ===========
+-h --help         Show this help
+-d --device       Specify a device by path on the system
+-c --channel      Select which meshtastic channel to be used for secure communications"""
+)
 
-    mesh_term = MeshTerminal()
+if __name__ == "__main__":
+    if "--help" in sys.argv or "-h" in sys.argv:
+        printHelp()
+        sys.exit(0)
+
+    devicePath = ""
+    channelId = COMMAND_CHANNEL
+    # Parse args
+    i = 0
+    while i < len(sys.argv):
+        if sys.argv[i] == "--show-devices":
+            print(f"Found: {meshtastic.util.findPorts()}")
+            sys.exit(0)
+        elif sys.argv[i] == "--device" or sys.argv[i] == "-d":
+            i += 1
+            try:
+                devicePath = str(sys.argv[i])
+                print(f"SUCCESS GOT {sys.argv[i]}")
+            except IndexError:
+                print(f"[ERROR] Expected a device path, got nothing")
+                sys.exit(1)
+        elif sys.argv[i] == "--channel" or sys.argv[i] == "-c":
+            i += 1
+            try:
+                channelId = int(sys.argv[i])
+            except IndexError:
+                print(f"[ERROR] Expected a channel id integer, got nothing") 
+                sys.exit(1)
+            except ValueError:
+                print(f"[ERROR] Expected an integer channel id, got {sys.argv[i]}") 
+                sys.exit(1)
+        i += 1
+
+    mesh_term = MeshTerminal(devicePath, channelId)
     
     sel = selectors.DefaultSelector()
     sel.register(mesh_term.master_fd, selectors.EVENT_READ)
