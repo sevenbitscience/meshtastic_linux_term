@@ -1,3 +1,15 @@
+"""
+Joey Milausnic
+February 2026
+
+Meshtastic Linux Terminal
+
+Expose a bash terminal session on linux over meshtastic!
+
+When run with the -x flag uses app id 357 for communicating to the custom 
+client app.
+"""
+
 import meshtastic
 import meshtastic.serial_interface
 from pubsub import pub
@@ -21,9 +33,14 @@ MAX_MESSAGE_CHARS=220
 
 
 class MeshTerminal:
-    def __init__(self, devicePath, secureChannelId):
+    def __init__(self, devicePath, secureChannelId, useClientApp):
         # Save the parameters this was called with
         self.secureChannelId = secureChannelId
+
+        self.appID = "TEXT_MESSAGE_APP"
+
+        if useClientApp:
+            self.appID = 357
 
         # Subscribe to whenever a message is recieved
         self.gotMessage = pub.subscribe(self.onReceive, "meshtastic.receive")
@@ -96,14 +113,15 @@ class MeshTerminal:
             msg_type = packet['decoded']['portnum']
             channel = packet['channel'] 
             # Match text messages on the right channel
-            if channel == self.secureChannelId and msg_type == 'TEXT_MESSAGE_APP':
-                message_txt = packet['decoded']['payload'].decode()
-
-                print(f"[MESH_TERM][MESSAGE LISTENER] Got a message on the authorized channel!\n{message_txt}")
-                
-                # Run the command that we got sent
-                os.write(self.master_fd, (message_txt + "\n").encode())
-                print('='*80)
+            if channel == self.secureChannelId:# and msg_type == 'TEXT_MESSAGE_APP':
+                if msg_type == self.appID:
+                    message_txt = packet['decoded']['payload'].decode()
+                    print(f"[MESH_TERM][MESSAGE LISTENER] Got a message on the authorized channel!\n{message_txt}")
+                    # Run the command that we got sent
+                    if self.appID == 'TEXT_MESSAGE_APP':
+                        message_txt == message_txt + "\n"
+                    os.write(self.master_fd, (message_txt).encode())
+                    print('='*80)
         except KeyError:
             pass
 
@@ -116,10 +134,11 @@ class MeshTerminal:
             print(f"[MESH_TERM][SEND_TTY] Got data: {data}")
             chunks = self.chunk_data_on_lines(data, MAX_MESSAGE_CHARS)
             for msg in chunks:
-                msg = msg.removesuffix('\r\n')
+                if self.appID == 1:
+                    msg = msg.removesuffix('\r\n')
                 print("[MESH_TERM][SEND_TTY] Sending a chunk...")
                 print(msg,end='')
-                self.interface.sendText(msg, wantAck=True, channelIndex=self.secureChannelId)
+                self.interface.sendText(msg, wantAck=True, channelIndex=self.secureChannelId, portNum=self.appID)
                 if msg[-1] != '\n': print('')
                 time.sleep(MESSAGE_DELAY)
             print('='*80)
@@ -146,7 +165,8 @@ def printHelp():
 =========== OPTIONS ===========
 -h --help         Show this help
 -d --device       Specify a device by path on the system
--c --channel      Select which meshtastic channel to be used for secure communications"""
+-c --channel      Select which meshtastic channel to be used for secure communications
+-x                Run in direct output mode (Data is sent over port 357 for the companion client app)"""
 )
 
 if __name__ == "__main__":
@@ -156,6 +176,7 @@ if __name__ == "__main__":
 
     devicePath = ""
     channelId = COMMAND_CHANNEL
+    useClientApp = False
     # Parse args
     i = 0
     while i < len(sys.argv):
@@ -166,7 +187,6 @@ if __name__ == "__main__":
             i += 1
             try:
                 devicePath = str(sys.argv[i])
-                print(f"SUCCESS GOT {sys.argv[i]}")
             except IndexError:
                 print(f"[ERROR] Expected a device path, got nothing")
                 sys.exit(1)
@@ -180,9 +200,11 @@ if __name__ == "__main__":
             except ValueError:
                 print(f"[ERROR] Expected an integer channel id, got {sys.argv[i]}") 
                 sys.exit(1)
+        elif sys.argv[i] == "-x":
+            useClientApp = True
         i += 1
 
-    mesh_term = MeshTerminal(devicePath, channelId)
+    mesh_term = MeshTerminal(devicePath, channelId, useClientApp)
     
     sel = selectors.DefaultSelector()
     sel.register(mesh_term.master_fd, selectors.EVENT_READ)
