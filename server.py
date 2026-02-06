@@ -133,7 +133,7 @@ class MeshTerminal:
         if data:
             print(f"[MESH_TERM][SEND_TTY] Got data: {data}")
             if self.appID == 357:
-                chunks = split_by_length(data, MAX_MESSAGE_CHARS)
+                chunks = self.split_by_length(data, MAX_MESSAGE_CHARS)
             else:
                 chunks = self.chunk_data_on_lines(data, MAX_MESSAGE_CHARS)
             for msg in chunks:
