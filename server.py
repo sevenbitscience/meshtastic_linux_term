@@ -119,8 +119,8 @@ class MeshTerminal:
                     print(f"[MESH_TERM][onReceive] Got a message on the authorized channel!\n{message_txt}")
                     # Run the command that we got sent
                     if self.appID == 'TEXT_MESSAGE_APP':
-                        message_txt == message_txt + "\n"
-                    os.write(self.master_fd, (message_txt).encode())
+                        message_txt = message_txt + "\n"
+                    os.write(self.master_fd, message_txt.encode())
                     print('='*80)
         except KeyError:
             pass
@@ -216,7 +216,6 @@ if __name__ == "__main__":
             for key, mask in events:
                 if key.fd == mesh_term.master_fd:
                     mesh_term.sendTtyFeedback()
-            time.sleep(1)
         except KeyboardInterrupt:
             print("Keyboard interrupt recieved, stopping.")
             mesh_term.disconnect()
