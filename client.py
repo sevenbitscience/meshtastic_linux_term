@@ -46,7 +46,7 @@ class MeshTerminal:
     """
     def sendData(self):
         dataToBeSent = sys.stdin.readline()
-        out = self.interface.sendData(dataToBeSent.encode("utf-8"), channelIndex=self.secureChannelId, portNum=357)
+        out = self.interface.sendData(dataToBeSent.encode("utf-8"), wantAck=True, channelIndex=self.secureChannelId, portNum=357)
 
     """
     When a packet is received on the trusted channel, print the output to the 
@@ -120,7 +120,6 @@ if __name__ == "__main__":
     while True:
         try:
             for key, mask in sel.select(timeout=1):
-                print("Got some data")
                 mesh_term.sendData()
         except KeyboardInterrupt:
             print("Keyboard interrupt recieved, stopping.")

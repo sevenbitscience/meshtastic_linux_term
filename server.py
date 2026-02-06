@@ -26,7 +26,7 @@ import struct
 # The channel that commands are sent over
 COMMAND_CHANNEL=1
 # Time to wait between sending messages, in seconds
-MESSAGE_DELAY=5
+MESSAGE_DELAY=1
 
 # The maximum number of characters to send in one message
 MAX_MESSAGE_CHARS=220
