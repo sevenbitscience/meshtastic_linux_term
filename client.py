@@ -78,6 +78,7 @@ def printHelp():
 """      Mesh Terminal (Client)
 =========== OPTIONS ===========
 -h --help         Show this help
+   --show-devices Shows the connected meshtastic devices
 -d --device       Specify a device by path on the system
 -c --channel      Select which meshtastic channel to be used for secure communications
 """

@@ -164,6 +164,7 @@ def printHelp():
 """      Mesh Terminal (Server)
 =========== OPTIONS ===========
 -h --help         Show this help
+   --show-devices Shows the connected meshtastic devices
 -d --device       Specify a device by path on the system
 -c --channel      Select which meshtastic channel to be used for secure communications
 -x                Run in direct output mode (Data is sent over port 357 for the companion client app)"""
