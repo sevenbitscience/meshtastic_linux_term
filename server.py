@@ -132,7 +132,10 @@ class MeshTerminal:
         data = os.read(self.master_fd, 2048).decode("utf-8")
         if data:
             print(f"[MESH_TERM][SEND_TTY] Got data: {data}")
-            chunks = self.chunk_data_on_lines(data, MAX_MESSAGE_CHARS)
+            if self.appID == 357:
+                chunks = split_by_length(data, MAX_MESSAGE_CHARS)
+            else:
+                chunks = self.chunk_data_on_lines(data, MAX_MESSAGE_CHARS)
             for msg in chunks:
                 if self.appID == 'TEXT_MESSAGE_APP':
                     msg = msg.removesuffix('\r\n')

@@ -11,7 +11,7 @@ sent with this program will be ingnored.
 import meshtastic
 import meshtastic.serial_interface
 from pubsub import pub
-import time
+import selectors
 import sys
 
 # The channel that commands are sent over
@@ -97,7 +97,6 @@ if __name__ == "__main__":
             i += 1
             try:
                 devicePath = str(sys.argv[i])
-                print(f"SUCCESS GOT {sys.argv[i]}")
             except IndexError:
                 print(f"[ERROR] Expected a device path, got nothing")
                 sys.exit(1)
@@ -114,11 +113,15 @@ if __name__ == "__main__":
         i += 1
 
     mesh_term = MeshTerminal(devicePath, channelId)
+
+    sel = selectors.DefaultSelector()
+    sel.register(sys.stdin, selectors.EVENT_READ)
     
     while True:
         try:
-            mesh_term.sendData()
-            time.sleep(0.5)
+            for key, mask in sel.select(timeout=1):
+                print("Got some data")
+                mesh_term.sendData()
         except KeyboardInterrupt:
             print("Keyboard interrupt recieved, stopping.")
             mesh_term.disconnect()
