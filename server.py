@@ -37,7 +37,7 @@ class MeshTerminal:
         # Save the parameters this was called with
         self.secureChannelId = secureChannelId
 
-        self.appID = "TEXT_MESSAGE_APP"
+        self.appID = 'TEXT_MESSAGE_APP'
 
         if useClientApp:
             self.appID = 357
@@ -116,7 +116,7 @@ class MeshTerminal:
             if channel == self.secureChannelId:# and msg_type == 'TEXT_MESSAGE_APP':
                 if msg_type == self.appID:
                     message_txt = packet['decoded']['payload'].decode()
-                    print(f"[MESH_TERM][MESSAGE LISTENER] Got a message on the authorized channel!\n{message_txt}")
+                    print(f"[MESH_TERM][onReceive] Got a message on the authorized channel!\n{message_txt}")
                     # Run the command that we got sent
                     if self.appID == 'TEXT_MESSAGE_APP':
                         message_txt == message_txt + "\n"
@@ -134,7 +134,7 @@ class MeshTerminal:
             print(f"[MESH_TERM][SEND_TTY] Got data: {data}")
             chunks = self.chunk_data_on_lines(data, MAX_MESSAGE_CHARS)
             for msg in chunks:
-                if self.appID == 1:
+                if self.appID == 'TEXT_MESSAGE_APP':
                     msg = msg.removesuffix('\r\n')
                 print("[MESH_TERM][SEND_TTY] Sending a chunk...")
                 print(msg,end='')
